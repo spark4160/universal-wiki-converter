@@ -1,5 +1,11 @@
 package com.atlassian.uwc.converters.dokuwiki;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.log4j.Logger;
+
+import com.atlassian.uwc.converters.tikiwiki.RegexUtil;
 import com.atlassian.uwc.converters.LeadingSpacesBaseConverter;
 import com.atlassian.uwc.ui.Page;
 
@@ -9,13 +15,14 @@ import com.atlassian.uwc.ui.Page;
  */
 public class LeadingSpacesConverter extends LeadingSpacesBaseConverter {
 
+	Logger log = Logger.getLogger(this.getClass());
+
 	protected String initialspacedelim = "  (?! *?[-*])"; //two spaces!
 
 	@Override
 	public void convert(Page page) {
 		String input = page.getOriginalText();
 		String converted = convertLeadingSpaces(input);
-		page.setConvertedText(converted);
 	}
 
 	protected String convertLeadingSpaces(String input) {

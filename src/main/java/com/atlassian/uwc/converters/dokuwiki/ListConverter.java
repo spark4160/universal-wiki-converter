@@ -3,6 +3,8 @@ package com.atlassian.uwc.converters.dokuwiki;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Base64;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.log4j.Logger;
 
@@ -14,6 +16,9 @@ public class ListConverter extends BaseConverter {
 	Logger log = Logger.getLogger(this.getClass());
 	public void convert(Page page) {
 		String input = page.getOriginalText();
+		// Replace all WRAPNEWLINEs with \n
+		// String converted = input.replace("WRAPNEWLINE", "\n");
+		// String converted = convertWraps(input);
 		String converted = convertList(input);
 		page.setConvertedText(converted);
 	}
@@ -36,7 +41,7 @@ public class ListConverter extends BaseConverter {
 			String delim = listFinder.group(2);
 			int start = listFinder.start();
 			if (delim.equals("-")) delim = "#"; //switch to confluence ordered delim
-			
+
 			//depth state
 			if (start > 0) { //make sure we don't need to clean up the depths state
 				String between = input.substring(laststart, start);
@@ -51,12 +56,12 @@ public class ListConverter extends BaseConverter {
 			//note the depths that have happened so far, so we can properly remove delims later
 			if (depths.isEmpty()) depths.add(depth);
 			else if (depth > depths.lastElement()) depths.add(depth);
-			
+
 			//depth increased: add delim
-			if (depth > lastdepth)   
+			if (depth > lastdepth)
 				lastdelim += delim;
 			//depth is the same: replace last char with delim
-			else if (depth == lastdepth) 
+			else if (depth == lastdepth)
 				lastdelim = lastdelim.substring(0,lastdelim.length()-1) + delim;
 			//depth is less: figure out how much less and replace last with delim
 			else {
@@ -68,14 +73,14 @@ public class ListConverter extends BaseConverter {
 						if (depth >= mindepth && depth < maxdepth)  {
 							lastdelim = lastdelim.substring(0, i); //figure out correct length
 							//replace last with delim
-							if (lastdelim.length() > 1)  
+							if (lastdelim.length() > 1)
 								lastdelim = lastdelim.substring(0, lastdelim.length()-1) + delim;
 							else
 								lastdelim = delim;
 						}
 						//else if depth == maxdepth, lastdelim is unchanged
 					}
-				} catch (ArrayIndexOutOfBoundsException e) { 
+				} catch (ArrayIndexOutOfBoundsException e) {
 					// the list syntax had errors in it, wasn't consistent, etc.
 					// so we'll just use the lastdelimiter as a best guess and continue forward
 					// which means we do nothing here
@@ -89,6 +94,32 @@ public class ListConverter extends BaseConverter {
 		}
 		if (found) {
 			listFinder.appendTail(sb);
+			return sb.toString();
+		}
+		return input;
+	}
+
+	Pattern wraps = Pattern.compile("(?s)WRAP64ENCODED ([^ ]*) WRAP64EXCODED");
+	private String convertWraps(String input) {
+		Matcher wrapsFinder = wraps.matcher(input);
+		StringBuffer sb = new StringBuffer();
+		boolean found = false;
+		while (wrapsFinder.find()) {
+			found = true;
+			String all = wrapsFinder.group(1);
+			log.info("wraps all=" + all);
+			// String replacement = all.replace("\n", "WRAPNEWLINE");
+			// String replacement = "NO BROKEN TABLES";
+			// String replacement = "WRAP64ENCODED" + (new String(Encoder.encode(all.getBytes()), StandardCharsets.UTF_8)) + "WRAP64EXCODED";
+			// Decoder decoder = new Decoder();
+			String replacement = new String(Base64.getDecoder().decode(all), StandardCharsets.UTF_8);
+			replacement = RegexUtil.handleEscapesInReplacement(replacement);
+			log.info("wraps replacement=" + replacement);
+			wrapsFinder.appendReplacement(sb, replacement);
+		}
+		// log.info("wraps found=" + found);
+		if (found) {
+			wrapsFinder.appendTail(sb);
 			return sb.toString();
 		}
 		return input;

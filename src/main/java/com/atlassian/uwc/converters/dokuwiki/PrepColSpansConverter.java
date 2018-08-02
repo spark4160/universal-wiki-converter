@@ -28,7 +28,8 @@ public class PrepColSpansConverter extends BaseConverter {
 			found = true;
 			String spans = spanFinder.group();
 			int spanlength = spans.length();
-			String replacement = DELIM +TOKENKEY+spanlength+DELIM +spans.substring(0, 1);
+			// String replacement = DELIM +TOKENKEY+spanlength+DELIM +spans.substring(0, 1);
+			String replacement = DELIM +TOKENKEY+spanlength+DELIM +spans;
 			replacement = RegexUtil.handleEscapesInReplacement(replacement);
 			spanFinder.appendReplacement(sb, replacement);
 		}

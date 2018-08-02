@@ -3,6 +3,8 @@ package com.atlassian.uwc.converters.dokuwiki;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Base64;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.log4j.Logger;
 
@@ -17,12 +19,20 @@ public class TableRowColSpanConverter extends BaseConverter {
 	@Override
 	public void convert(Page page) {
 		String input = page.getOriginalText();
+		// if (input.contains("Force Indicator")) {
+		// 	log.info("Force Indicator=" + input);
+		// } else {
+		// 	log.info("Force Dindicator");
+		// }
 		String tmpconverted = convertColspans(input);
-		if (!(page instanceof VersionPage) && !input.equals(tmpconverted)) 
+		if (!(page instanceof VersionPage) && !input.equals(tmpconverted))
 			log.debug("Colspans detected: '" + page.getName() + "' in space: " + page.getSpacekey());
 		String converted = convertRowspans(tmpconverted);
-		if (!(page instanceof VersionPage) && !tmpconverted.equals(converted)) 
+		if (!(page instanceof VersionPage) && !tmpconverted.equals(converted))
 			log.debug("Rowspans detected: '" + page.getName() + "' in space: " + page.getSpacekey());
+		// Convert WRAPNEWLINEs back to newlines
+		// converted = converted.replace("WRAPNEWLINE", "\n");
+		converted = convertWraps(converted);
 		page.setConvertedText(converted);
 	}
 
@@ -61,7 +71,7 @@ public class TableRowColSpanConverter extends BaseConverter {
 		}
 		return input;
 	}
-	
+
 	Pattern uwctokenrowspan = Pattern.compile("::" + PrepRowSpansConverter.TOKENKEY + "(\\d+)::");
 	Pattern rowspan = Pattern.compile(":::");
 	protected String convertRowspans(String input) {
@@ -77,7 +87,7 @@ public class TableRowColSpanConverter extends BaseConverter {
 				tdFinder.appendReplacement(sb, "");
 				continue;
 			}
-			
+
 			Matcher uwctokenFinder = uwctokenrowspan.matcher(row);
 			boolean found2 = false;
 			String len = "";
@@ -99,6 +109,32 @@ public class TableRowColSpanConverter extends BaseConverter {
 		}
 		if (found) {
 			tdFinder.appendTail(sb);
+			return sb.toString();
+		}
+		return input;
+	}
+
+	Pattern wraps = Pattern.compile("(?s)WRAP64ENCODED ([^ ]*) WRAP64EXCODED");
+	private String convertWraps(String input) {
+		Matcher wrapsFinder = wraps.matcher(input);
+		StringBuffer sb = new StringBuffer();
+		boolean found = false;
+		while (wrapsFinder.find()) {
+			found = true;
+			String all = wrapsFinder.group(1);
+			log.info("wraps all=" + all);
+			// String replacement = all.replace("\n", "WRAPNEWLINE");
+			// String replacement = "NO BROKEN TABLES";
+			// String replacement = "WRAP64ENCODED" + (new String(Encoder.encode(all.getBytes()), StandardCharsets.UTF_8)) + "WRAP64EXCODED";
+			// Decoder decoder = new Decoder();
+			String replacement = new String(Base64.getDecoder().decode(all), StandardCharsets.UTF_8);
+			replacement = RegexUtil.handleEscapesInReplacement(replacement);
+			log.info("wraps replacement=" + replacement);
+			wrapsFinder.appendReplacement(sb, replacement);
+		}
+		// log.info("wraps found=" + found);
+		if (found) {
+			wrapsFinder.appendTail(sb);
 			return sb.toString();
 		}
 		return input;

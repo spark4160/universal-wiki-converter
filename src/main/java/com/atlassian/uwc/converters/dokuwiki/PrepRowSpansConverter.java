@@ -1,11 +1,14 @@
 package com.atlassian.uwc.converters.dokuwiki;
 
 import java.util.HashMap;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.log4j.Logger;
 
 import com.atlassian.uwc.converters.BaseConverter;
 import com.atlassian.uwc.converters.tikiwiki.RegexUtil;
@@ -13,16 +16,24 @@ import com.atlassian.uwc.ui.Page;
 
 public class PrepRowSpansConverter extends BaseConverter {
 
+	Logger log = Logger.getLogger(this.getClass());
+
 
 	public static final String TOKENKEY = "UWCTOKENROWSPANS:";
 	private static final String DELIM = "::";
 	@Override
 	public void convert(Page page) {
 		String input = page.getOriginalText();
+		if (input.contains("Force Indicator")) {
+			log.info("Force Indicator=" + input);
+		} else {
+			log.info("Force Dindicator");
+		}
+		// log.info("top input=" + input);
 		String converted = prep(input);
 		page.setConvertedText(converted);
 	}
-	
+
 	Pattern rowspan = Pattern.compile("(?<=^|\n)[|^](.*?):::(.*?)((\n(?=\\s*[^|^]))|$)", Pattern.DOTALL);
 	protected String prep(String input) {
 		Matcher rowspanFinder = rowspan.matcher(input);
@@ -43,10 +54,13 @@ public class PrepRowSpansConverter extends BaseConverter {
 			//how many columns
 			int numcols = getNumCols(table);
 			//Look for a cell without the signal. Does the one following have it?
+			log.info("table pre=" + table);
 			for (int i = 0; i < numcols; i++) {
 				//for each :::, if the one above is not :::, put the token?
+				log.info("col=" + Integer.toString(i));
 				table = handleColumn(i, table);
 			}
+			log.info("table post=" + table);
 			table = RegexUtil.handleEscapesInReplacement(pre + table);
 			rowspanFinder.appendReplacement(sb, table);
 		}
@@ -56,7 +70,7 @@ public class PrepRowSpansConverter extends BaseConverter {
 		}
 		return input;
 	}
-	
+
 	Pattern moreThanOneTable = Pattern.compile("[|^]\n([^|^]|\n).*?[|^]", Pattern.DOTALL);
 	protected boolean needToTrim(String input) {
 		Matcher finder = moreThanOneTable.matcher(input);
@@ -75,8 +89,10 @@ public class PrepRowSpansConverter extends BaseConverter {
 	String cellstring = "[|^][^|^]*";
 	Pattern cell = Pattern.compile(cellstring);
 	protected String handleColumn(int i, String input) {
+		// log.info("col input=" + input);
 		String pre = "(?<=^|\n)";
-		while (i-- > 0) { pre += cellstring;} 
+		while (i-- > 0) { pre += cellstring;}
+		log.info("colFinder=\"" + pre+"("+cellstring+")" + "\"");
 		Pattern p = Pattern.compile(pre+"("+cellstring+")");
 		Matcher colFinder = p.matcher(input);
 		int lastrow = -1;
@@ -84,8 +100,10 @@ public class PrepRowSpansConverter extends BaseConverter {
 		TreeMap<Integer, String> additions = new TreeMap<Integer, String>();
 		while (colFinder.find()) {
 			String cellcontents = colFinder.group(1);
+			log.info("cellcontents=" + cellcontents);
 			if (!cellcontents.contains(":::")) {
 				if (length > 0) {
+					log.info("addition A");
 					additions.put(lastrow, DELIM + TOKENKEY + (length+1) + DELIM);
 					length = 0;
 				}
@@ -96,7 +114,13 @@ public class PrepRowSpansConverter extends BaseConverter {
 			}
 		}
 		if (length > 0) {
+			log.info("addition B");
 			additions.put(lastrow, DELIM + TOKENKEY + (length+1) + DELIM);
+		}
+		for (Entry<Integer, String> entry : additions.entrySet()) {
+			Integer key = entry.getKey();
+			String value = entry.getValue();
+			log.info(Integer.toString(key) + ": " + value);
 		}
 		Set<Integer> keySet = additions.keySet();
 		Vector<Integer> keys = new Vector<Integer>(keySet);
@@ -105,8 +129,11 @@ public class PrepRowSpansConverter extends BaseConverter {
 		int first = 0, last = 0;
 		for (int index = 0; index < keys.size(); index ++ ) {
 			last = keys.get(index);
+			// log.info("input=" + input);
+			// log.info("first=" + first);
+			// log.info("last=" + last);
 			String part = input.substring(first, last);
-			output += part + additions.get(last); 
+			output += part + additions.get(last);
 			first = last;
 		}
 		output += input.substring(last);

@@ -28,7 +28,7 @@ public class DokuwikiAttachmentConverterTest extends TestCase {
 		input = "{{wiki:dokuwiki-128.png}}\n" +
 				"{{:cow.jpg|}}\n";
 		expected = "!dokuwiki-128.png!\n" +
-				"!cow.jpg!\n"; 
+				"!cow.jpg!\n";
 		page.setOriginalText(input);
 		tester.convert(page);
 		actual = page.getConvertedText();
@@ -44,10 +44,10 @@ public class DokuwikiAttachmentConverterTest extends TestCase {
 		tester.setAttachmentDirectory("sampleData/hierarchy/doku-media/");
 		Page page = new Page(null);
 		String input, expected, actual;
-		input = 
-				"{{:images:cows:cow.jpg}} - render\n" + 
-				"{{images:hobbespounce.gif|}}\n" + 
-				"{{images:hobbespounce.gif|Alias?}}\n" + 
+		input =
+				"{{:images:cows:cow.jpg}} - render\n" +
+				"{{images:hobbespounce.gif|}}\n" +
+				"{{images:hobbespounce.gif|Alias?}}\n" +
 				"{{images:cow.pdf}}\n" +
 				"{{images:cow.pdf|}}\n" +
 				"{{images:cow.pdf|Alias}}\n";
@@ -68,14 +68,14 @@ public class DokuwikiAttachmentConverterTest extends TestCase {
 		assertEquals("hobbespounce.gif", testatt.get(1).getName());
 		assertEquals("cow.jpg", testatt.get(2).getName());
 	}
-	
+
 
 	public void testConvertImages_wSize() {
 		Page page = new Page(null);
 		String input, expected, actual;
-		input = "{{images:cow.jpg?50}} - render\n" + 
+		input = "{{images:cow.jpg?50}} - render\n" +
 			"{{:images:cow.jpg?50}} - render\n" +
-			"{{images:cow.jpg?50x100}} - render\n" + 
+			"{{images:cow.jpg?50x100}} - render\n" +
 			"{{:images:cow.jpg?50x100}} - render\n" +
 			"{{images:cow.jpg?50}}\n" + //what do we do if no extension?
 			"{{images:cow.jpg?words&50}}\n" + //what do we do if non-number params?
@@ -103,14 +103,14 @@ public class DokuwikiAttachmentConverterTest extends TestCase {
 		actual = tester.createRelativePath(input, "");
 		assertNotNull(actual);
 		assertEquals(expected, actual);
-		
+
 		input = ":cow.jpg"; //parent's cow.jpg?
 		String rel = "foo/";
 		expected = "/foo/cow.jpg";
 		actual = tester.createRelativePath(input, rel);
 		assertNotNull(actual);
 		assertEquals(expected, actual);
-		
+
 		tester.getProperties().setProperty("filepath-hierarchy-ignorable-ancestors", "/foo/bar/");
 		input = ":cow.jpg"; //parent's cow.jpg?
 		rel = "/foo/bar/foo";
@@ -118,7 +118,7 @@ public class DokuwikiAttachmentConverterTest extends TestCase {
 		actual = tester.createRelativePath(input, rel);
 		assertNotNull(actual);
 		assertEquals(expected, actual);
-		
+
 		tester.getProperties().setProperty("filepath-hierarchy-ignorable-ancestors", "/foo/bar/");
 		input = ":notrel:cow.jpg"; //not that relative
 		rel = "/foo/bar/foo";
@@ -126,7 +126,7 @@ public class DokuwikiAttachmentConverterTest extends TestCase {
 		actual = tester.createRelativePath(input, rel);
 		assertNotNull(actual);
 		assertEquals(expected, actual);
-		
+
 	}
 	public void testCreateRelativePath_case() {
 		String input, expected, actual;
@@ -137,7 +137,7 @@ public class DokuwikiAttachmentConverterTest extends TestCase {
 		actual = tester.createRelativePath(input, rel);
 		assertNotNull(actual);
 		assertEquals(expected, actual);
-		
+
 		tester.getProperties().setProperty("filepath-hierarchy-ignorable-ancestors", "/foo/bar/");
 		input = ":Notrel:Cow.jpg"; //but the case in the filename needs to be maintained
 		rel = "/foo/bar/foo";
@@ -146,10 +146,10 @@ public class DokuwikiAttachmentConverterTest extends TestCase {
 		assertNotNull(actual);
 		assertEquals(expected, actual);
 	}
-	
+
 	public void testAltCase() {
 		File file = new File("sampleData/dokuwiki/sampledokuwiki-inputbasic.txt");
-		File actual = tester.altCase(file);
+		File actual = tester.altCase(file, "");
 		String expected = "SampleDokuwiki-InputBasic.txt";
 		assertNotNull(actual);
 		assertEquals(expected, actual.getName());
